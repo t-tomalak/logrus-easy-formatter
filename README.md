@@ -71,8 +71,8 @@ And after running will output
 ## ToDo
 - [x] Customizable timestamp formats
 - [x] Customizable output formats
+- [x] Add tests
 - [ ] Support for custom fields other then `string`
-- [ ] Add tests
 - [ ] Tests against all characters
 
 ## License
