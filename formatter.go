@@ -1,4 +1,4 @@
-// This package allows to easily format output of Logrus logger
+// Package easy allows to easily format output of Logrus logger
 package easy
 
 import (

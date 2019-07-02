@@ -1,0 +1,53 @@
+version: 2.0
+
+jobs:
+  "task": &task
+    docker:
+      - image: circleci/golang:latest
+    working_directory: /go/src/github.com/t-tomalak/logrus-easy-formatter
+    steps:
+      - checkout
+      - run: go version
+      - run: go get -t ./...
+      - run: go test -v -race ./...
+
+  "latest":
+    <<: *task
+    environment:
+      LATEST: true
+
+  "1.12":
+    <<: *task
+    docker:
+      - image: circleci/golang:1.12
+
+  "1.11":
+    <<: *task
+    docker:
+      - image: circleci/golang:1.11
+
+  "1.10":
+    <<: *task
+    docker:
+      - image: circleci/golang:1.10
+
+  "1.9":
+    <<: *task
+    docker:
+      - image: circleci/golang:1.9
+
+  "1.8":
+    <<: *task
+    docker:
+      - image: circleci/golang:1.8
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - "latest"
+      - "1.12"
+      - "1.11"
+      - "1.10"
+      - "1.9"
+      - "1.8"
