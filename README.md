@@ -1,4 +1,5 @@
-[![status](https://travis-ci.com/t-tomalak/logrus-easy-formatter.svg?branch=master)](https://travis-ci.com/t-tomalak/logrus-easy-formatter)
+[![status](https://circleci.com/gh/t-tomalak/logrus-easy-formatter.svg?style=svg)](https://circleci.com/gh/t-tomalak/logrus-easy-formatter)
+[![Go Report Card](https://goreportcard.com/badge/github.com/t-tomalak/logrus-easy-formatter)](https://goreportcard.com/report/github.com/t-tomalak/logrus-easy-formatter)
 ## Logrus Easy Formatter
 Provided formatter allow to easily format [Logrus](https://github.com/sirupsen/logrus) log output
 Some inspiration taken from [logrus-prefixed-formatter](https://github.com/x-cray/logrus-prefixed-formatter)
