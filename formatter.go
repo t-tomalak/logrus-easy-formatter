@@ -2,6 +2,7 @@
 package easy
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -45,6 +46,10 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	for k, v := range entry.Data {
 		if s, ok := v.(string); ok {
+			output = strings.Replace(output, "%"+k+"%", s, 1)
+		}
+		if i, ok := v.(int); ok {
+			s := strconv.Itoa(i)
 			output = strings.Replace(output, "%"+k+"%", s, 1)
 		}
 	}
