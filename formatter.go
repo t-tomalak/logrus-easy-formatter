@@ -44,12 +44,15 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 	level := strings.ToUpper(entry.Level.String())
 	output = strings.Replace(output, "%lvl%", level, 1)
 
-	for k, v := range entry.Data {
-		if s, ok := v.(string); ok {
+	for k, val := range entry.Data {
+		switch v := val.(type) {
+		case string:
+			output = strings.Replace(output, "%"+k+"%", v, 1)
+		case int:
+			s := strconv.Itoa(v)
 			output = strings.Replace(output, "%"+k+"%", s, 1)
-		}
-		if i, ok := v.(int); ok {
-			s := strconv.Itoa(i)
+		case bool:
+			s := strconv.FormatBool(v)
 			output = strings.Replace(output, "%"+k+"%", s, 1)
 		}
 	}
