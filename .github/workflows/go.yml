@@ -8,9 +8,12 @@ jobs:
     strategy:
       matrix:
         go_version: ["1", "1.12", "1.11", "1.10", "1.9", "1.8"]
+        
+    env:
+      GO111MODULE: on
+      
     steps:
-
-    - name: Set up Go ${{ matrix.go_version }}
+    - name: Set up Go
       uses: actions/setup-go@v1
       with:
         go-version: ${{ matrix.go_version }}
