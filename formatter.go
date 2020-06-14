@@ -60,6 +60,7 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 			output = strings.Replace(output, "%"+k+"%", s, 1)
 		}
 	}
-
+// 	make sure to have a linebreak for each entry
+	output = strings.TrimSuffix(output, "\n") + "\n"
 	return []byte(output), nil
 }
