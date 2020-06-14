@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 )
@@ -53,6 +54,9 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 			output = strings.Replace(output, "%"+k+"%", s, 1)
 		case bool:
 			s := strconv.FormatBool(v)
+			output = strings.Replace(output, "%"+k+"%", s, 1)
+		default:
+			s := fmt.Sprintf("%v",v)
 			output = strings.Replace(output, "%"+k+"%", s, 1)
 		}
 	}
