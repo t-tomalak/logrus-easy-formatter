@@ -70,6 +70,42 @@ And after running will output
 [INFO]: 27-02-2018 19:16:55 - Log message - {Sample value}
 ```
 
+##### Usage with fuction and file's path
+You also can use tag %path% and %func% to write the log's cur function and line.
+Just like this:
+```go
+package main
+
+import (
+	"github.com/sirupsen/logrus"
+)
+
+func main() {
+	logrus.SetLevel(logrus.TraceLevel)
+	logrus.SetReportCaller(true)
+	logrus.SetFormatter(&Formatter{
+		LogFormat: "%time%[%lvl%]%func%|%path%|: %msg%\n",
+		UseColors: true})   // If you want the level colored, just try it.
+	logrus.Tracef("Hey!")
+	logrus.Debugf("Hey!")
+	logrus.Infof("Hey!")
+	logrus.Warnf("Hey!")
+	logrus.Errorf("Hey!")
+	logrus.Fatalf("Hey!")
+	logrus.Panicf("Hey!")
+}
+
+```
+And the output is 
+```
+2020-10-30T20:20:07+08:00[TRACE]main.main()|main.go:13|: Hey!
+2020-10-30T20:20:07+08:00[DEBUG]main.main()|main.go:14|: Hey!
+2020-10-30T20:20:07+08:00[INFO]main.main()|main.go:15|: Hey!
+2020-10-30T20:20:07+08:00[WARNING]main.main()|main.go:16|: Hey!
+2020-10-30T20:20:07+08:00[ERROR]main.main()|main.go:17|: Hey!
+2020-10-30T20:20:07+08:00[FATAL]main.main()|main.go:18|: Hey!
+```
+
 ## ToDo
 - [x] Customizable timestamp formats
 - [x] Customizable output formats
