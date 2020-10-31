@@ -72,8 +72,10 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 		PathAndFunc: f.CallerPrettyfier(entry.Caller),
 		YAML: func(data logrus.Fields) string {
 			if len(data) > 0 {
-				yml, _ := yaml.Marshal(data)
-				return string(yml)
+				yml, err := yaml.Marshal(data)
+				if err != nil {
+					return string(yml)
+				}
 			}
 			return ""
 		}(entry.Data),
