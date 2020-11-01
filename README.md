@@ -3,6 +3,11 @@
 A provided formatter allow to format [Logrus](https://github.com/sirupsen/logrus) log output
 
 ## How to use
+#### Install
+```shell
+go get github.com/klarkxy/logrus-formatter
+```
+#### Use
 ```go
 logrus.SetFormatter(formatter.NewFormatter("xxx"))
 ```
