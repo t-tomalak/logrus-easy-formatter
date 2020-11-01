@@ -21,15 +21,16 @@ type Formatter struct {
 	LogFormat        string
 	CallerPrettyfier func(*runtime.Frame) (ret string)
 	LevelColor       map[logrus.Level]color.Color
+	ModuleName       string
 }
 
 // NewFormatter 新增一个Formatter
-func NewFormatter() *Formatter {
+func NewFormatter(name string) *Formatter {
 	// 默认输出
 	// [2006-01-02 15:04:05][INFO]main.go:123|main.main()
 	// Log message
 	return &Formatter{
-		LogFormat:       "[{{.Time}}]{{.Module}}[{{.Level}}][{{.PathAndFunc}}] {{.Msg}}\n{{.YAML}}",
+		LogFormat:       "{{.Time}}{{.Level}}{{.PathAndFunc}}{{.Module}} {{.Msg}}\n{{.YAML}}",
 		TimestampFormat: "2006-01-02 15:04:05",
 		CallerPrettyfier: func(f *runtime.Frame) string {
 			if f != nil {
@@ -48,6 +49,7 @@ func NewFormatter() *Formatter {
 			logrus.FatalLevel: color.Magenta,
 			logrus.PanicLevel: color.Magenta,
 		},
+		ModuleName: name,
 	}
 }
 
@@ -60,34 +62,27 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 	log := struct {
 		Time, Level, PathAndFunc, Msg, YAML, Module string
 	}{
-		Time: entry.Time.Format(timestampFormat),
+		Time: "[" + entry.Time.Format(timestampFormat) + "]",
 		Level: func(lvl logrus.Level) string {
 			level := strings.ToUpper(lvl.String())
 			col, has := f.LevelColor[lvl]
 			if has {
 				level = col.Sprint(level)
 			}
-			return level
+			return "[" + level + "]"
 		}(entry.Level),
 		PathAndFunc: f.CallerPrettyfier(entry.Caller),
 		YAML: func(data logrus.Fields) string {
 			if len(data) > 0 {
 				yml, err := yaml.Marshal(data)
 				if err != nil {
-					return string(yml)
+					return "[" + string(yml) + "]"
 				}
 			}
 			return ""
 		}(entry.Data),
-		Msg: entry.Message,
-		Module: func(data logrus.Fields) string {
-			str, has := data["module"].(string)
-			if has {
-				delete(data, "module")
-				return str
-			}
-			return ""
-		}(entry.Data),
+		Msg:    entry.Message,
+		Module: "[" + f.ModuleName + "]",
 	}
 
 	output := bytes.NewBuffer([]byte{})

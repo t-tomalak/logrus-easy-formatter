@@ -4,5 +4,5 @@ A provided formatter allow to format [Logrus](https://github.com/sirupsen/logrus
 
 ## How to use
 ```go
-logrus.SetFormatter(formatter.NewFormatter())
+logrus.SetFormatter(formatter.NewFormatter("xxx"))
 ```
