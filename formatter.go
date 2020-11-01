@@ -24,11 +24,11 @@ type Formatter struct {
 	ModuleName       string
 }
 
-// NewFormatter 新增一个Formatter
+// NewFormatter New a formatter called name
+// Default Log:
+// [2006-01-02 15:04:05][INFO][main.go:123|main.main()][xxx] Msg
+// Other fields
 func NewFormatter(name string) *Formatter {
-	// 默认输出
-	// [2006-01-02 15:04:05][INFO]main.go:123|main.main()
-	// Log message
 	return &Formatter{
 		LogFormat:       "{{.Time}}{{.Level}}{{.PathAndFunc}}{{.Module}} {{.Msg}}\n{{.YAML}}",
 		TimestampFormat: "2006-01-02 15:04:05",
