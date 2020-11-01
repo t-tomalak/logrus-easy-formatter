@@ -29,7 +29,7 @@ func NewFormatter() *Formatter {
 	// [2006-01-02 15:04:05][INFO]main.go:123|main.main()
 	// Log message
 	return &Formatter{
-		LogFormat:       "[{{.Time}}][{{.Level}}][{{.PathAndFunc}}] {{.Msg}}\n{{.YAML}}",
+		LogFormat:       "[{{.Time}}]{{.Module}}[{{.Level}}][{{.PathAndFunc}}] {{.Msg}}\n{{.YAML}}",
 		TimestampFormat: "2006-01-02 15:04:05",
 		CallerPrettyfier: func(f *runtime.Frame) string {
 			if f != nil {
@@ -58,7 +58,7 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 	t, _ := template.New("format").Parse(f.LogFormat)
 
 	log := struct {
-		Time, Level, PathAndFunc, Msg, YAML string
+		Time, Level, PathAndFunc, Msg, YAML, Module string
 	}{
 		Time: entry.Time.Format(timestampFormat),
 		Level: func(lvl logrus.Level) string {
@@ -80,6 +80,14 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 			return ""
 		}(entry.Data),
 		Msg: entry.Message,
+		Module: func(data logrus.Fields) string {
+			str, has := data["module"].(string)
+			if has {
+				delete(data, "module")
+				return str
+			}
+			return ""
+		}(entry.Data),
 	}
 
 	output := bytes.NewBuffer([]byte{})
