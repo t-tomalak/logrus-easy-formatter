@@ -11,3 +11,9 @@ go get github.com/klarkxy/logrus-formatter
 ```go
 logrus.SetFormatter(formatter.NewFormatter("xxx"))
 ```
+or
+```go
+log := logrus.New()
+log.SetFormatter(formatter.NewFormatter("QQ-Bot"))
+// log.SetReportCaller(true)   // Just do you like
+```
