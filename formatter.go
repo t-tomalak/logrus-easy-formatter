@@ -35,10 +35,10 @@ func NewFormatter(name string) *Formatter {
 		CallerPrettyfier: func(f *runtime.Frame) string {
 			if f != nil {
 				filename := path.Base(f.File)
-				return fmt.Sprintf("%s:%d|%s()", filename, f.Line, f.Function)
-			} else {
-				return ""
+				fun := strings.Split(f.Function, "/")
+				return fmt.Sprintf("[%s:%d|%s()]", filename, f.Line, fun[len(fun)-1])
 			}
+			return ""
 		},
 		LevelColor: map[logrus.Level]color.Color{
 			logrus.TraceLevel: color.Gray,
