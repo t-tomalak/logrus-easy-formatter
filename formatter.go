@@ -67,7 +67,7 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 			level := strings.ToUpper(lvl.String())
 			col, has := f.LevelColor[lvl]
 			if has {
-				level = col.Sprintf("%-7s", level)
+				level = col.Sprint(string([]byte(level + "   ")[:5]))
 			}
 			return "|" + level
 		}(entry.Level),
