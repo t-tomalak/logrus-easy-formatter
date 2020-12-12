@@ -36,7 +36,7 @@ func NewFormatter(name string) *Formatter {
 			if f != nil {
 				filename := path.Base(f.File)
 				fun := strings.Split(f.Function, "/")
-				return fmt.Sprintf("| %s:%d:%s()", filename, f.Line, fun[len(fun)-1])
+				return fmt.Sprintf("| %s:%d|%s()", filename, f.Line, fun[len(fun)-1])
 			}
 			return ""
 		},
