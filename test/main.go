@@ -6,8 +6,8 @@ import (
 )
 
 func main() {
-	logrus.SetFormatter(formatter.NewFormatter())
-	logrus.SetReportCaller(true)
+	logrus.SetFormatter(formatter.NewFormatter("test"))
+	// logrus.SetReportCaller(true)
 	logrus.WithFields(logrus.Fields{
 		"aaa": 1234,
 		"bbb": map[string]interface{}{

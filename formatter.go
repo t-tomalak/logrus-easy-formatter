@@ -25,15 +25,16 @@ type Formatter struct {
 }
 
 // NewFormatter New a formatter called name
-func NewFormatter() *Formatter {
+func NewFormatter(modName string) *Formatter {
 	return &Formatter{
-		LogFormat:       "{{.Time}} {{.Level}} {{.Module}} {{.PathAndFunc}} | {{.Msg}}\n{{.YAML}}",
+		LogFormat:       "[{{.Time}}][{{.Level}}][{{.Module}}]{{.PathAndFunc}} {{.Msg}}\n{{.YAML}}",
 		TimestampFormat: "2006-01-02 15:04:05",
+		ModuleName:      modName,
 		CallerPrettyfier: func(f *runtime.Frame) string {
 			if f != nil {
 				filename := path.Base(f.File)
 				fun := strings.Split(f.Function, "/")
-				return fmt.Sprintf("%s:%d %s()", filename, f.Line, fun[len(fun)-1])
+				return fmt.Sprintf("%s:%d|%s()", filename, f.Line, fun[len(fun)-1])
 			}
 			return ""
 		},
@@ -68,7 +69,12 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 			level := strings.ToUpper(lvl.String())
 			return col.Sprint((level + "     ")[:4])
 		}(entry.Level),
-		PathAndFunc: col.Sprint(f.CallerPrettyfier(entry.Caller)),
+		PathAndFunc: func() string {
+			if entry.Caller != nil {
+				return "[" + col.Sprint(f.CallerPrettyfier(entry.Caller)) + "]"
+			}
+			return ""
+		}(),
 		YAML: func(data logrus.Fields) string {
 			if len(data) > 0 {
 				yml, err := yaml.Marshal(data)
@@ -78,7 +84,8 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 			}
 			return ""
 		}(entry.Data),
-		Msg: entry.Message,
+		Msg:    col.Sprint(entry.Message),
+		Module: col.Sprint(f.ModuleName),
 	}
 	output := bytes.NewBuffer([]byte{})
 	t.Execute(output, log)
