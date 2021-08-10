@@ -60,7 +60,15 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if !has {
 		col = color.White
 	}
-
+	// 对error进行特殊处理
+	if field, ok := entry.Data[logrus.ErrorKey]; ok {
+		if err, ok := field.(error); ok {
+			entry.Data[logrus.ErrorKey] = struct {
+				Text  string
+				Error error
+			}{Text: err.Error(), Error: err}
+		}
+	}
 	log := struct {
 		Time, Level, PathAndFunc, Msg, YAML, Module string
 	}{
