@@ -22,12 +22,16 @@ type Formatter struct {
 	CallerPrettyfier func(*runtime.Frame) (ret string)
 	LevelColor       map[logrus.Level]color.Color
 	ModuleName       string
+	NoColor          bool
 }
 
-// NewFormatter New a formatter called name
 func NewFormatter(modName string) *Formatter {
+	return NewConsoleFormatter(modName)
+}
+
+func NewConsoleFormatter(modName string) *Formatter {
 	return &Formatter{
-		LogFormat:       "[{{.Time}}][{{.Level}}][{{.Module}}]{{.PathAndFunc}} {{.Msg}}\n{{.YAML}}",
+		LogFormat:       "[{{.Time}}][{{.Level}}][{{.Module}}][{{.PathAndFunc}}] {{.Msg}}\n{{.YAML}}",
 		TimestampFormat: "2006-01-02 15:04:05",
 		ModuleName:      modName,
 		CallerPrettyfier: func(f *runtime.Frame) string {
@@ -47,6 +51,23 @@ func NewFormatter(modName string) *Formatter {
 			logrus.FatalLevel: color.Magenta,
 			logrus.PanicLevel: color.Bold,
 		},
+		NoColor: false,
+	}
+}
+func NewFileFormatter(modName string) *Formatter {
+	return &Formatter{
+		LogFormat:       "[{{.Time}}][{{.Level}}][{{.Module}}][{{.PathAndFunc}}] {{.Msg}}\n{{.YAML}}",
+		TimestampFormat: "2006-01-02 15:04:05",
+		ModuleName:      modName,
+		CallerPrettyfier: func(f *runtime.Frame) string {
+			if f != nil {
+				filename := path.Base(f.File)
+				fun := strings.Split(f.Function, "/")
+				return fmt.Sprintf("%s:%d|%s()", filename, f.Line, fun[len(fun)-1])
+			}
+			return ""
+		},
+		NoColor: true,
 	}
 }
 
@@ -56,10 +77,6 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 	timestampFormat := f.TimestampFormat
 	t, _ := template.New("format").Parse(f.LogFormat)
 
-	col, has := f.LevelColor[entry.Level]
-	if !has {
-		col = color.White
-	}
 	// 对error进行特殊处理
 	if field, ok := entry.Data[logrus.ErrorKey]; ok {
 		if err, ok := field.(error); ok {
@@ -69,17 +86,29 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 			}{Text: err.Error(), Error: err}
 		}
 	}
+	Sprint := func(a ...interface{}) string {
+		if f.NoColor {
+			return fmt.Sprint(a...)
+		}
+
+		col, has := f.LevelColor[entry.Level]
+		if !has {
+			col = color.White
+		}
+		return col.Sprint(a...)
+	}
+
 	log := struct {
 		Time, Level, PathAndFunc, Msg, YAML, Module string
 	}{
-		Time: col.Sprint(entry.Time.Format(timestampFormat)),
+		Time: Sprint(entry.Time.Format(timestampFormat)),
 		Level: func(lvl logrus.Level) string {
 			level := strings.ToUpper(lvl.String())
-			return col.Sprint((level + "     ")[:4])
+			return Sprint((level + "     ")[:4])
 		}(entry.Level),
 		PathAndFunc: func() string {
 			if entry.Caller != nil {
-				return "[" + col.Sprint(f.CallerPrettyfier(entry.Caller)) + "]"
+				return Sprint(f.CallerPrettyfier(entry.Caller))
 			}
 			return ""
 		}(),
@@ -92,8 +121,8 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 			}
 			return ""
 		}(entry.Data),
-		Msg:    col.Sprint(entry.Message),
-		Module: col.Sprint(f.ModuleName),
+		Msg:    Sprint(entry.Message),
+		Module: Sprint(f.ModuleName),
 	}
 	output := bytes.NewBuffer([]byte{})
 	t.Execute(output, log)
