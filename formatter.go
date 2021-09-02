@@ -1,61 +1,131 @@
-// Package easy allows to easily format output of Logrus logger
-package easy
+package formatter
 
 import (
-	"strconv"
+	"bytes"
+	"fmt"
+	"path"
+	"runtime"
 	"strings"
-	"time"
+	"text/template"
+
+	"gopkg.in/yaml.v2"
+
+	"github.com/gookit/color"
 
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	// Default log format will output [INFO]: 2006-01-02T15:04:05Z07:00 - Log message
-	defaultLogFormat       = "[%lvl%]: %time% - %msg%"
-	defaultTimestampFormat = time.RFC3339
-)
-
 // Formatter implements logrus.Formatter interface.
 type Formatter struct {
-	// Timestamp format
-	TimestampFormat string
-	// Available standard keys: time, msg, lvl
-	// Also can include custom fields but limited to strings.
-	// All of fields need to be wrapped inside %% i.e %time% %msg%
-	LogFormat string
+	TimestampFormat  string
+	LogFormat        string
+	CallerPrettyfier func(*runtime.Frame) (ret string)
+	LevelColor       map[logrus.Level]color.Color
+	ModuleName       string
+	NoColor          bool
+}
+
+func NewFormatter(modName string) *Formatter {
+	return NewConsoleFormatter(modName)
+}
+
+func NewConsoleFormatter(modName string) *Formatter {
+	return &Formatter{
+		LogFormat:       "[{{.Time}}][{{.Level}}][{{.Module}}][{{.PathAndFunc}}] {{.Msg}}\n{{.YAML}}",
+		TimestampFormat: "2006-01-02 15:04:05",
+		ModuleName:      modName,
+		CallerPrettyfier: func(f *runtime.Frame) string {
+			if f != nil {
+				filename := path.Base(f.File)
+				fun := strings.Split(f.Function, "/")
+				return fmt.Sprintf("%s:%d|%s()", filename, f.Line, fun[len(fun)-1])
+			}
+			return ""
+		},
+		LevelColor: map[logrus.Level]color.Color{
+			logrus.TraceLevel: color.Gray,
+			logrus.DebugLevel: color.Green,
+			logrus.InfoLevel:  color.Blue,
+			logrus.WarnLevel:  color.Yellow,
+			logrus.ErrorLevel: color.Red,
+			logrus.FatalLevel: color.Magenta,
+			logrus.PanicLevel: color.Bold,
+		},
+		NoColor: false,
+	}
+}
+func NewFileFormatter(modName string) *Formatter {
+	return &Formatter{
+		LogFormat:       "[{{.Time}}][{{.Level}}][{{.Module}}][{{.PathAndFunc}}] {{.Msg}}\n{{.YAML}}",
+		TimestampFormat: "2006-01-02 15:04:05",
+		ModuleName:      modName,
+		CallerPrettyfier: func(f *runtime.Frame) string {
+			if f != nil {
+				filename := path.Base(f.File)
+				fun := strings.Split(f.Function, "/")
+				return fmt.Sprintf("%s:%d|%s()", filename, f.Line, fun[len(fun)-1])
+			}
+			return ""
+		},
+		NoColor: true,
+	}
 }
 
 // Format building log message.
 func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
-	output := f.LogFormat
-	if output == "" {
-		output = defaultLogFormat
-	}
 
 	timestampFormat := f.TimestampFormat
-	if timestampFormat == "" {
-		timestampFormat = defaultTimestampFormat
-	}
+	t, _ := template.New("format").Parse(f.LogFormat)
 
-	output = strings.Replace(output, "%time%", entry.Time.Format(timestampFormat), 1)
-
-	output = strings.Replace(output, "%msg%", entry.Message, 1)
-
-	level := strings.ToUpper(entry.Level.String())
-	output = strings.Replace(output, "%lvl%", level, 1)
-
-	for k, val := range entry.Data {
-		switch v := val.(type) {
-		case string:
-			output = strings.Replace(output, "%"+k+"%", v, 1)
-		case int:
-			s := strconv.Itoa(v)
-			output = strings.Replace(output, "%"+k+"%", s, 1)
-		case bool:
-			s := strconv.FormatBool(v)
-			output = strings.Replace(output, "%"+k+"%", s, 1)
+	// 对error进行特殊处理
+	if field, ok := entry.Data[logrus.ErrorKey]; ok {
+		if err, ok := field.(error); ok {
+			entry.Data[logrus.ErrorKey] = struct {
+				Text  string
+				Error error
+			}{Text: err.Error(), Error: err}
 		}
 	}
+	Sprint := func(a ...interface{}) string {
+		if f.NoColor {
+			return fmt.Sprint(a...)
+		}
 
-	return []byte(output), nil
+		col, has := f.LevelColor[entry.Level]
+		if !has {
+			col = color.White
+		}
+		return col.Sprint(a...)
+	}
+
+	log := struct {
+		Time, Level, PathAndFunc, Msg, YAML, Module string
+	}{
+		Time: Sprint(entry.Time.Format(timestampFormat)),
+		Level: func(lvl logrus.Level) string {
+			level := strings.ToUpper(lvl.String())
+			return Sprint((level + "     ")[:4])
+		}(entry.Level),
+		PathAndFunc: func() string {
+			if entry.Caller != nil {
+				return Sprint(f.CallerPrettyfier(entry.Caller))
+			}
+			return ""
+		}(),
+		YAML: func(data logrus.Fields) string {
+			if len(data) > 0 {
+				yml, err := yaml.Marshal(data)
+				if err == nil {
+					return string(yml)
+				}
+			}
+			return ""
+		}(entry.Data),
+		Msg:    Sprint(entry.Message),
+		Module: Sprint(f.ModuleName),
+	}
+	output := bytes.NewBuffer([]byte{})
+	t.Execute(output, log)
+
+	return output.Bytes(), nil
 }
