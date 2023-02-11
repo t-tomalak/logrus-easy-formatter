@@ -2,6 +2,8 @@
 package easy
 
 import (
+	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +21,7 @@ const (
 type Formatter struct {
 	// Timestamp format
 	TimestampFormat string
-	// Available standard keys: time, msg, lvl
+	// Available standard keys: time, msg, lvl, caller
 	// Also can include custom fields but limited to strings.
 	// All of fields need to be wrapped inside %% i.e %time% %msg%
 	LogFormat string
@@ -37,12 +39,28 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 		timestampFormat = defaultTimestampFormat
 	}
 
+	caller := ""
+	if entry.Caller != nil {
+		// fileShortPath should contain at most the last 3 levels of the file path
+		filePath := entry.Caller.File
+		tokens := strings.Split(filePath, string(os.PathSeparator))
+		startPos := len(tokens) - 3
+		if startPos < 0 {
+			startPos = 0
+		}
+		fileShortPath := strings.Join(tokens[startPos:], string(os.PathSeparator))
+
+		// keep the function name only without the package prefix e.g. package.Func => Func
+		funcName := entry.Caller.Func.Name()
+		funcShortName := funcName[strings.LastIndex(funcName, ".")+1:]
+
+		caller = fmt.Sprintf("%s:%d in %s", fileShortPath, entry.Caller.Line, funcShortName)
+	}
+
 	output = strings.Replace(output, "%time%", entry.Time.Format(timestampFormat), 1)
-
 	output = strings.Replace(output, "%msg%", entry.Message, 1)
-
-	level := strings.ToUpper(entry.Level.String())
-	output = strings.Replace(output, "%lvl%", level, 1)
+	output = strings.Replace(output, "%lvl%", strings.ToUpper(entry.Level.String()), 1)
+	output = strings.Replace(output, "%caller%", caller, 1)
 
 	for k, val := range entry.Data {
 		switch v := val.(type) {
